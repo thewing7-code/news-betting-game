@@ -227,8 +227,12 @@ app.get('/', (req, res) => {
                     <div id="leaderboard">참여 모둠 없음</div>
                 </div>
             </div>
-            <div style="text-align:center; margin-top: 16px;">
+            <div style="text-align:center; margin-top: 16px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
                 <button class="btn" style="background:#64748b; width:auto; padding:10px 24px;" onclick="clearBets()">이번 턴 배팅 비우기</button>
+                <button class="btn" style="background:#dc2626; width:auto; padding:10px 24px;" onclick="resetGame()">⚠ 전체 초기화 (모든 모둠·점수 삭제)</button>
+            </div>
+            <div style="text-align:center; margin-top: 8px; font-size: 0.85em; color: #94a3b8;">
+                테스트 후 실제 수업 시작 전, 위 버튼으로 테스트 데이터를 깨끗하게 지우세요.
             </div>
         </div>
     </div>
@@ -322,6 +326,12 @@ app.get('/', (req, res) => {
             socket.emit('clearRound');
         }
 
+        function resetGame() {
+            if (!confirm('정말 초기화하시겠습니까?\n모든 모둠의 점수와 베팅 기록이 완전히 삭제됩니다.\n(테스트 데이터를 지우고 실제 수업을 시작할 때만 누르세요)')) return;
+            if (!confirm('한 번 더 확인합니다.\n진행 중인 라운드와 모든 모둠 점수가 사라집니다. 계속할까요?')) return;
+            socket.emit('resetGame');
+        }
+
         socket.on('roundStarted', (data) => {
             currentRoundArticles = data.articles;
             if (myRole === 'student') {
@@ -399,6 +409,18 @@ app.get('/', (req, res) => {
 
         socket.on('settleNotice', (msg) => {
             alert(msg);
+        });
+
+        socket.on('gameReset', () => {
+            currentRoundArticles = null;
+            mySelectedTarget = null;
+            if (myRole === 'student') {
+                document.getElementById('studentArticles').classList.add('hidden');
+                document.getElementById('studentBetForm').classList.add('hidden');
+                document.getElementById('studentRoundWait').classList.remove('hidden');
+                document.getElementById('betAmount').value = '';
+                document.getElementById('betStatus').innerText = '';
+            }
         });
 
         socket.on('betError', (msg) => {
@@ -509,6 +531,15 @@ io.on('connection', (socket) => {
     Object.values(gameState.teams).forEach(t => {
       t.currentBet = { target: null, amount: 0 };
     });
+    io.emit('updateState', publicState());
+  });
+
+  // 전체 초기화 (교사 권한) — 테스트 데이터를 지우고 실제 수업을 깨끗하게 시작하기 위함
+  socket.on('resetGame', () => {
+    gameState.teams = {};
+    gameState.currentRoundIndex = -1;
+    gameState.bettingOpen = false;
+    io.emit('gameReset'); // 모든 학생 화면도 초기 대기 상태로 되돌림
     io.emit('updateState', publicState());
   });
 
