@@ -1,0 +1,16 @@
+{
+  "name": "news-literacy-betting-game",
+  "version": "1.0.0",
+  "description": "초등학교 6학년 뉴스 리터러시 실시간 배팅 게임",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "socket.io": "^4.7.5"
+  }
+}
